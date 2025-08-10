@@ -29,6 +29,9 @@ function getAudio(text, voice, rate, volume, pitch) {
     // 定数定義
     const MAX_BYTES_PER_CHUNK = 800  // テキスト分割の閾値（バイト）
     
+    // デバッグログを格納する変数
+    let debugLog = ""
+    
     // Rhinoでのログ出力テスト
     try {
         // Javaのprintを試す
@@ -46,6 +49,8 @@ function getAudio(text, voice, rate, volume, pitch) {
     // 特定の文字列が含まれていたら強制的にデバッグモードON
     if (text.indexOf("彼の企業が繁栄") !== -1) {
         debugMode = true
+        debugLog += "=== GCP-JP DEBUG INFO ===\n"
+        debugLog += "デバッグモード: 自動ON (特定文字列検出)\n"
     }
     
     let speed = rate
@@ -134,16 +139,14 @@ function getAudio(text, voice, rate, volume, pitch) {
     
     // デバッグ情報
     if (debugMode === "true" || debugMode === true) {
-        let debugInfo = "=== GCP-JP DEBUG INFO ===\n"
-        debugInfo += "元のテキスト: " + text + "\n"
-        debugInfo += "元のテキスト長: " + text.length + " 文字, " + totalBytes + " バイト\n"
-        debugInfo += "MAX_BYTES_PER_CHUNK: " + MAX_BYTES_PER_CHUNK + "\n"
-        debugInfo += "分割数: " + chunks.length + "\n"
+        debugLog += "元のテキスト: " + text + "\n"
+        debugLog += "元のテキスト長: " + text.length + " 文字, " + totalBytes + " バイト\n"
+        debugLog += "MAX_BYTES_PER_CHUNK: " + MAX_BYTES_PER_CHUNK + "\n"
+        debugLog += "分割数: " + chunks.length + "\n"
         for (let i = 0; i < chunks.length; i++) {
             let bytes = new java.lang.String(chunks[i]).getBytes("UTF-8")
-            debugInfo += "Chunk " + (i+1) + ": " + bytes.length + " バイト - " + chunks[i] + "\n"
+            debugLog += "Chunk " + (i+1) + ": " + bytes.length + " バイト - " + chunks[i] + "\n"
         }
-        throw debugInfo
     }
     
     // 単一チャンクの場合
@@ -167,7 +170,8 @@ function getAudio(text, voice, rate, volume, pitch) {
         // デバッグ: JSONリクエストのサイズを確認
         if (debugMode === "true" || debugMode === true) {
             let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
-            throw "JSONリクエストボディ: " + jsonBytes + " バイト\n" + str
+            debugLog += "\nJSONリクエストボディ: " + jsonBytes + " バイト\n"
+            debugLog += "JSON内容: " + str + "\n"
         }
         
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
@@ -205,7 +209,13 @@ function getAudio(text, voice, rate, volume, pitch) {
         // デバッグ: JSONリクエストのサイズを確認
         if (debugMode === "true" || debugMode === true) {
             let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
-            throw "JSONリクエストボディ: " + jsonBytes + " バイト\n" + str
+            debugLog += "\nJSONリクエストボディ: " + jsonBytes + " バイト\n"
+            debugLog += "JSON内容: " + str + "\n"
+        }
+        
+        // デバッグログを出力して処理を中断
+        if (debugMode === "true" || debugMode === true) {
+            throw debugLog
         }
         
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
