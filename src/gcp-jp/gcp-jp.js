@@ -1,6 +1,5 @@
 let apiKey = ttsrv.userVars["apiKey"]
 let manualLangSpeed = ttsrv.userVars["manualLangSpeed"]
-let debugMode = ttsrv.userVars["debugMode"]
 
 let PluginJS = {
     "name": "GCP日本語TTS",
@@ -12,7 +11,6 @@ let PluginJS = {
     "vars": {
         apiKey: {label: "API-KEY", hint: "Google Cloud API-KEY"},
         manualLangSpeed: {label: "Manual Language Speed", hint: "Manual Language Speed"},
-        debugMode: {label: "Debug Mode", hint: "true でデバッグ情報を表示"},
     },
 
     "getAudio": function (text, locale, voice, rate, volume, pitch) {
@@ -29,29 +27,6 @@ function getAudio(text, voice, rate, volume, pitch) {
     // 定数定義
     const MAX_BYTES_PER_CHUNK = 300  // Google APIの文単位制限を考慮して小さく設定
     
-    // デバッグログを格納する変数
-    let debugLog = ""
-    
-    // Rhinoでのログ出力テスト
-    try {
-        // Javaのprintを試す
-        print("=== GCP-JP print test ===")
-        print("Text: " + text)
-        print("TEST: これはprintのテストです")
-        
-        // JavaのSystem.out.printlnを試す
-        java.lang.System.out.println("=== GCP-JP System.out test ===")
-        java.lang.System.out.println("Voice: " + voice)
-    } catch (e) {
-        // ログ出力が失敗した場合は無視
-    }
-    
-    // 特定の文字列が含まれていたら強制的にデバッグモードON
-    // if (text.indexOf("彼の企業が繁栄") !== -1) {
-    //     debugMode = true
-    //     debugLog += "=== GCP-JP DEBUG INFO ===\n"
-    //     debugLog += "デバッグモード: 自動ON (特定文字列検出)\n"
-    // }
     
     let speed = rate
     let jpSpeed = 1
@@ -83,32 +58,15 @@ function getAudio(text, voice, rate, volume, pitch) {
     let totalBytes = 0
     try {
         totalBytes = new java.lang.String(text).getBytes("UTF-8").length
-        // if (debugMode === "true" || debugMode === true) {
-        //     throw "入力テキスト全体: " + totalBytes + " バイト"
-        // }
     } catch (e) {
-        // if (debugMode === "true" || debugMode === true) {
-        //     throw e
-        // }
+        totalBytes = 0
     }
     
     // バイト数が多い場合はvoiceをNeural2-Bに変更
     if (totalBytes > MAX_BYTES_PER_CHUNK) {
         if (voice.indexOf("Chirp3-HD") !== -1) {
             voice = "ja-JP-Neural2-B"  // Chirp3-HDの場合はNeural2-Bに切り替え
-            
-            if (debugMode === "true" || debugMode === true) {
-                debugLog += "テキストが長いため、音声をNeural2-Bに変更しました\n"
-            }
         }
-    }
-    
-    // デバッグ情報
-    if (debugMode === "true" || debugMode === true) {
-        debugLog += "元のテキスト: " + text + "\n"
-        debugLog += "元のテキスト長: " + text.length + " 文字, " + totalBytes + " バイト\n"
-        debugLog += "MAX_BYTES_PER_CHUNK: " + MAX_BYTES_PER_CHUNK + "\n"
-        debugLog += "使用する音声: " + voice + "\n"
     }
     
     // 単一リクエストで処理
@@ -128,23 +86,29 @@ function getAudio(text, voice, rate, volume, pitch) {
     
     let str = JSON.stringify(body)
     
-    // デバッグ: JSONリクエストのサイズを確認
-    if (debugMode === "true" || debugMode === true) {
-        let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
-        debugLog += "\nJSONリクエストボディ: " + jsonBytes + " バイト\n"
-        debugLog += "JSON内容: " + str + "\n"
-        throw debugLog  // HTTPリクエスト前に出力
-    }
     
-    let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
-    
-    if (resp.isSuccessful()) {
-        let responseBody = resp.body().string()
-        let audioContent = JSON.parse(responseBody).audioContent
-        return base64ToByteArray(audioContent)
-    } else {
-        let errorBody = resp.body().string()
-        throw "FAILED: status=" + resp.code() + " body=" + errorBody + " text=" + text
+    try {
+        let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
+        
+        if (resp.isSuccessful()) {
+            let responseBody = resp.body().string()
+            let audioContent = JSON.parse(responseBody).audioContent
+            return base64ToByteArray(audioContent)
+        } else {
+            let errorBody = resp.body().string()
+            throw "FAILED: status=" + resp.code() + " body=" + errorBody + 
+                  " text_length=" + text.length + "文字" +
+                  " text_bytes=" + totalBytes + "バイト" +
+                  " voice=" + voice
+        }
+    } catch (e) {
+        if (e.toString().indexOf("FAILED:") === 0) {
+            throw e  // 既にフォーマット済みのエラー
+        }
+        throw "FAILED: " + e + 
+              " text_length=" + text.length + "文字" +
+              " text_bytes=" + totalBytes + "バイト" +
+              " voice=" + voice
     }
 }
 

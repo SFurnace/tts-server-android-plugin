@@ -11,9 +11,6 @@
       },
       "manualLangSpeed": {
         "label": "Manual Language Speed"
-      },
-      "debugMode": {
-        "label": "Debug Mode"
       }
     }
   }
