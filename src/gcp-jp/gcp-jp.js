@@ -200,7 +200,7 @@ function getAudio(text, voice, rate, volume, pitch) {
                 "name": voice
             },
             "audioConfig": {
-                "audioEncoding": "MP3",
+                "audioEncoding": "PCM",  // ヘッダーなしの生音声データ
                 "speakingRate": jpSpeed
             }
         }
