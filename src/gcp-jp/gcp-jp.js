@@ -25,7 +25,7 @@ function base64ToByteArray(base64) {
 
 function getAudio(text, voice, rate, volume, pitch) {
     // 定数定義
-    const MAX_BYTES_PER_CHUNK = 300  // Google APIの文単位制限を考慮して小さく設定
+    const MAX_BYTES_PER_CHUNK = 250  // Google APIの文単位制限を考慮して小さく設定
     
     
     let speed = rate
