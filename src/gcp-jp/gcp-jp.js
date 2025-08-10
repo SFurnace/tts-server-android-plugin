@@ -48,31 +48,6 @@ function getAudio(text, voice, rate, volume, pitch) {
         debugMode = true
     }
     
-    // デバッグモードチェック
-    if (debugMode === "true" || debugMode === true) {
-        // デバッグ情報を例外として表示
-        let debugInfo = "=== GCP-JP DEBUG INFO ===\n"
-        debugInfo += "text: " + text + "\n"
-        debugInfo += "text length: " + text.length + "\n"
-        debugInfo += "voice: " + voice + "\n"
-        debugInfo += "rate: " + rate + "\n"
-        
-        // 文字エンコーディング確認
-        try {
-            let bytes = new java.lang.String(text).getBytes("UTF-8")
-            debugInfo += "UTF-8 bytes length: " + bytes.length + "\n"
-            
-            // 最初の10文字の文字コードを確認
-            for (let i = 0; i < Math.min(text.length, 10); i++) {
-                debugInfo += "char[" + i + "]: " + text.charAt(i) + " (code: " + text.charCodeAt(i) + ")\n"
-            }
-        } catch (e) {
-            debugInfo += "Encoding error: " + e + "\n"
-        }
-        
-        throw debugInfo
-    }
-    
     let speed = rate
     let jpSpeed = 1
     if (voice === null || voice === "") {
@@ -159,12 +134,14 @@ function getAudio(text, voice, rate, volume, pitch) {
     
     // デバッグ情報
     if (debugMode === "true" || debugMode === true) {
-        let debugInfo = "テキスト分割情報:\n"
-        debugInfo += "元のテキスト長: " + text.length + " 文字\n"
+        let debugInfo = "=== GCP-JP DEBUG INFO ===\n"
+        debugInfo += "元のテキスト: " + text + "\n"
+        debugInfo += "元のテキスト長: " + text.length + " 文字, " + totalBytes + " バイト\n"
+        debugInfo += "MAX_BYTES_PER_CHUNK: " + MAX_BYTES_PER_CHUNK + "\n"
         debugInfo += "分割数: " + chunks.length + "\n"
         for (let i = 0; i < chunks.length; i++) {
             let bytes = new java.lang.String(chunks[i]).getBytes("UTF-8")
-            debugInfo += "Chunk " + (i+1) + ": " + chunks[i].length + " 文字, " + bytes.length + " バイト\n"
+            debugInfo += "Chunk " + (i+1) + ": " + bytes.length + " バイト - " + chunks[i] + "\n"
         }
         throw debugInfo
     }
@@ -186,6 +163,13 @@ function getAudio(text, voice, rate, volume, pitch) {
         }
         
         let str = JSON.stringify(body)
+        
+        // デバッグ: JSONリクエストのサイズを確認
+        if (debugMode === "true" || debugMode === true) {
+            let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
+            throw "JSONリクエストボディ: " + jsonBytes + " バイト\n" + str
+        }
+        
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
         
         if (resp.isSuccessful()) {
@@ -217,6 +201,13 @@ function getAudio(text, voice, rate, volume, pitch) {
         }
         
         let str = JSON.stringify(body)
+        
+        // デバッグ: JSONリクエストのサイズを確認
+        if (debugMode === "true" || debugMode === true) {
+            let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
+            throw "JSONリクエストボディ: " + jsonBytes + " バイト\n" + str
+        }
+        
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
 
         if (resp.isSuccessful()) {
