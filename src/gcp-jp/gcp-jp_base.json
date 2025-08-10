@@ -1,0 +1,17 @@
+[
+  {
+    "version": 1,
+    "name": "GCP日本語TTS",
+    "pluginId": "mk.gcp.jp.tts",
+    "author": "mkXultra",
+    "code": "",
+    "defVars": {
+      "apiKey": {
+        "label": "API-KEY"
+      },
+      "manualLangSpeed": {
+        "label": "Manual Language Speed"
+      }
+    }
+  }
+]
