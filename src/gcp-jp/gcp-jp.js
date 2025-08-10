@@ -26,11 +26,15 @@ function base64ToByteArray(base64) {
 }
 
 function getAudio(text, voice, rate, volume, pitch) {
+    // 定数定義
+    const MAX_BYTES_PER_CHUNK = 800  // テキスト分割の閾値（バイト）
+    
     // Rhinoでのログ出力テスト
     try {
         // Javaのprintを試す
         print("=== GCP-JP print test ===")
         print("Text: " + text)
+        print("TEST: これはprintのテストです")
         
         // JavaのSystem.out.printlnを試す
         java.lang.System.out.println("=== GCP-JP System.out test ===")
@@ -90,37 +94,125 @@ function getAudio(text, voice, rate, volume, pitch) {
         'X-Goog-Api-Key': apiKey
     }
 
-    let body = {
-        "input": {
-            "text": text
-        },
-        "voice": {
-            "languageCode": "ja-JP",
-            "name": voice
-        },
-        "audioConfig": {
-            "audioEncoding": "OGG_OPUS",
-            "speakingRate": jpSpeed
+    // テキストを安全なサイズに分割（MAX_BYTES_PER_CHUNKバイト制限）
+    let chunks = []
+    // 句読点で分割（区切り文字を保持）
+    let segments = text.split(/([。、！？\n])/)
+    let currentChunk = ""
+    
+    for (let i = 0; i < segments.length; i++) {
+        let segment = segments[i]
+        if (segment.length === 0) continue
+        
+        let testChunk = currentChunk + segment
+        
+        // バイト数チェック
+        try {
+            let bytes = new java.lang.String(testChunk).getBytes("UTF-8")
+            if (bytes.length > MAX_BYTES_PER_CHUNK) {
+                if (currentChunk.length > 0) {
+                    chunks.push(currentChunk)
+                    currentChunk = segment
+                } else {
+                    // 単一のセグメントが長すぎる場合は強制分割
+                    let byteArray = new java.lang.String(segment).getBytes("UTF-8")
+                    let cutPos = MAX_BYTES_PER_CHUNK
+                    
+                    // UTF-8の境界を考慮して分割
+                    while (cutPos > 0 && (byteArray[cutPos] & 0xC0) === 0x80) {
+                        cutPos--
+                    }
+                    
+                    let part = new java.lang.String(byteArray, 0, cutPos, "UTF-8")
+                    chunks.push(part)
+                    currentChunk = segment.substring(part.length())
+                }
+            } else {
+                currentChunk = testChunk
+            }
+        } catch (e) {
+            currentChunk = testChunk
         }
     }
     
-    let str = JSON.stringify(body)
-    logger.i("Request body: " + str)
-    logger.i("========================")
-    
-    let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
-
-    if (resp.isSuccessful()) {
-        let responseBody = resp.body().string()
-        logger.i("Response success")
-        let audioContent = JSON.parse(responseBody).audioContent;
-        return base64ToByteArray(audioContent)
-    } else {
-        let errorBody = resp.body().string()
-        logger.e("Response failed - status: " + resp.code())
-        logger.e("Error body: " + errorBody)
-        throw "FAILED: status=" + resp.code() + " body=" + errorBody + " params=" + "text=" + text + " voice=" + voice + " rate=" + rate
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk)
     }
+    
+    // デバッグ情報
+    if (debugMode === "true" || debugMode === true) {
+        let debugInfo = "テキスト分割情報:\n"
+        debugInfo += "元のテキスト長: " + text.length + " 文字\n"
+        debugInfo += "分割数: " + chunks.length + "\n"
+        for (let i = 0; i < chunks.length; i++) {
+            let bytes = new java.lang.String(chunks[i]).getBytes("UTF-8")
+            debugInfo += "Chunk " + (i+1) + ": " + chunks[i].length + " 文字, " + bytes.length + " バイト\n"
+        }
+        throw debugInfo
+    }
+    
+    // 単一チャンクの場合
+    if (chunks.length === 1) {
+        let body = {
+            "input": {
+                "text": chunks[0]
+            },
+            "voice": {
+                "languageCode": "ja-JP",
+                "name": voice
+            },
+            "audioConfig": {
+                "audioEncoding": "OGG_OPUS",
+                "speakingRate": jpSpeed
+            }
+        }
+        
+        let str = JSON.stringify(body)
+        let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
+        
+        if (resp.isSuccessful()) {
+            let responseBody = resp.body().string()
+            let audioContent = JSON.parse(responseBody).audioContent
+            return base64ToByteArray(audioContent)
+        } else {
+            let errorBody = resp.body().string()
+            throw "FAILED: status=" + resp.code() + " body=" + errorBody + " text=" + chunks[0]
+        }
+    }
+    
+    // 複数チャンクの場合 - バイトストリームとして結合
+    let outputStream = new java.io.ByteArrayOutputStream()
+    
+    for (let i = 0; i < chunks.length; i++) {
+        let body = {
+            "input": {
+                "text": chunks[i]
+            },
+            "voice": {
+                "languageCode": "ja-JP",
+                "name": voice
+            },
+            "audioConfig": {
+                "audioEncoding": "OGG_OPUS",
+                "speakingRate": jpSpeed
+            }
+        }
+        
+        let str = JSON.stringify(body)
+        let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
+
+        if (resp.isSuccessful()) {
+            let responseBody = resp.body().string()
+            let audioContent = JSON.parse(responseBody).audioContent
+            let audioBytes = base64ToByteArray(audioContent)
+            outputStream.write(audioBytes)
+        } else {
+            let errorBody = resp.body().string()
+            throw "FAILED: status=" + resp.code() + " body=" + errorBody + " chunk=" + chunks[i]
+        }
+    }
+    
+    return outputStream.toByteArray()
 }
 
 let EditorJS = {
