@@ -1,5 +1,6 @@
 let apiKey = ttsrv.userVars["apiKey"]
 let manualLangSpeed = ttsrv.userVars["manualLangSpeed"]
+let debugMode = ttsrv.userVars["debugMode"]
 
 let PluginJS = {
     "name": "GCP日本語TTS",
@@ -11,6 +12,7 @@ let PluginJS = {
     "vars": {
         apiKey: {label: "API-KEY", hint: "Google Cloud API-KEY"},
         manualLangSpeed: {label: "Manual Language Speed", hint: "Manual Language Speed"},
+        debugMode: {label: "Debug Mode", hint: "true でデバッグ情報を表示"},
     },
 
     "getAudio": function (text, locale, voice, rate, volume, pitch) {
@@ -24,19 +26,34 @@ function base64ToByteArray(base64) {
 }
 
 function getAudio(text, voice, rate, volume, pitch) {
-    // デバッグ用ログ
-    logger.i("=== GCP-JP DEBUG INFO ===")
-    logger.i("text: " + text)
-    logger.i("text length: " + text.length)
-    logger.i("voice: " + voice)
-    logger.i("rate: " + rate)
+    // console.logテスト（動作確認用）
+    console.log("=== GCP-JP console.log test ===")
+    console.log("Text: " + text)
+    console.log("Voice: " + voice)
     
-    // 文字エンコーディング確認
-    try {
-        let bytes = new java.lang.String(text).getBytes("UTF-8")
-        logger.i("UTF-8 bytes length: " + bytes.length)
-    } catch (e) {
-        logger.e("Encoding error: " + e)
+    // デバッグモードチェック
+    if (debugMode === "true" || debugMode === true) {
+        // デバッグ情報を例外として表示
+        let debugInfo = "=== GCP-JP DEBUG INFO ===\n"
+        debugInfo += "text: " + text + "\n"
+        debugInfo += "text length: " + text.length + "\n"
+        debugInfo += "voice: " + voice + "\n"
+        debugInfo += "rate: " + rate + "\n"
+        
+        // 文字エンコーディング確認
+        try {
+            let bytes = new java.lang.String(text).getBytes("UTF-8")
+            debugInfo += "UTF-8 bytes length: " + bytes.length + "\n"
+            
+            // 最初の10文字の文字コードを確認
+            for (let i = 0; i < Math.min(text.length, 10); i++) {
+                debugInfo += "char[" + i + "]: " + text.charAt(i) + " (code: " + text.charCodeAt(i) + ")\n"
+            }
+        } catch (e) {
+            debugInfo += "Encoding error: " + e + "\n"
+        }
+        
+        throw debugInfo
     }
     
     let speed = rate
@@ -57,9 +74,8 @@ function getAudio(text, voice, rate, volume, pitch) {
         jpSpeed = manualLangSpeed
     }
     
-    logger.i("calculated speed: " + speed)
-    logger.i("jpSpeed: " + jpSpeed)
-    logger.i("manualLangSpeed: " + manualLangSpeed)
+    // デバッグ用（必要に応じてコメントアウトを外す）
+    // throw "Speed debug - calculated: " + speed + ", jpSpeed: " + jpSpeed + ", manualLangSpeed: " + manualLangSpeed
 
     let reqHeaders = {
         'Content-Type': 'application/json; charset=utf-8',
