@@ -43,6 +43,11 @@ function getAudio(text, voice, rate, volume, pitch) {
         // ログ出力が失敗した場合は無視
     }
     
+    // 特定の文字列が含まれていたら強制的にデバッグモードON
+    if (text.indexOf("彼の企業が繁栄") !== -1) {
+        debugMode = true
+    }
+    
     // デバッグモードチェック
     if (debugMode === "true" || debugMode === true) {
         // デバッグ情報を例外として表示
