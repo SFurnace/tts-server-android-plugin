@@ -170,8 +170,9 @@ function getAudio(text, voice, rate, volume, pitch) {
         // デバッグ: JSONリクエストのサイズを確認
         if (debugMode === "true" || debugMode === true) {
             let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
-            debugLog += "\nJSONリクエストボディ: " + jsonBytes + " バイト\n"
+            debugLog += "\n[単一チャンク] JSONリクエストボディ: " + jsonBytes + " バイト\n"
             debugLog += "JSON内容: " + str + "\n"
+            throw debugLog  // HTTPリクエスト前に出力
         }
         
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
@@ -209,13 +210,12 @@ function getAudio(text, voice, rate, volume, pitch) {
         // デバッグ: JSONリクエストのサイズを確認
         if (debugMode === "true" || debugMode === true) {
             let jsonBytes = new java.lang.String(str).getBytes("UTF-8").length
-            debugLog += "\nJSONリクエストボディ: " + jsonBytes + " バイト\n"
+            debugLog += "\n[チャンク " + (i+1) + "] JSONリクエストボディ: " + jsonBytes + " バイト\n"
             debugLog += "JSON内容: " + str + "\n"
-        }
-        
-        // デバッグログを出力して処理を中断
-        if (debugMode === "true" || debugMode === true) {
-            throw debugLog
+            // 複数チャンクの場合は最初のチャンクだけでデバッグ終了
+            if (i === 0) {
+                throw debugLog
+            }
         }
         
         let resp = ttsrv.httpPost('https://texttospeech.googleapis.com/v1/text:synthesize', str, reqHeaders)
