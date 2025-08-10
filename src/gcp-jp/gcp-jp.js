@@ -94,6 +94,19 @@ function getAudio(text, voice, rate, volume, pitch) {
         'X-Goog-Api-Key': apiKey
     }
 
+    // テキスト全体のバイト数を確認
+    let totalBytes = 0
+    try {
+        totalBytes = new java.lang.String(text).getBytes("UTF-8").length
+        if (debugMode === "true" || debugMode === true) {
+            throw "入力テキスト全体: " + totalBytes + " バイト"
+        }
+    } catch (e) {
+        if (debugMode === "true" || debugMode === true) {
+            throw e
+        }
+    }
+    
     // テキストを安全なサイズに分割（MAX_BYTES_PER_CHUNKバイト制限）
     let chunks = []
     // 句読点で分割（区切り文字を保持）
