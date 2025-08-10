@@ -160,7 +160,7 @@ function getAudio(text, voice, rate, volume, pitch) {
                 "name": voice
             },
             "audioConfig": {
-                "audioEncoding": "OGG_OPUS",
+                "audioEncoding": "OGG_OPUS",  // 単一チャンクは高品質のOGG_OPUS
                 "speakingRate": jpSpeed
             }
         }
@@ -200,7 +200,7 @@ function getAudio(text, voice, rate, volume, pitch) {
                 "name": voice
             },
             "audioConfig": {
-                "audioEncoding": "OGG_OPUS",
+                "audioEncoding": "MP3",
                 "speakingRate": jpSpeed
             }
         }
