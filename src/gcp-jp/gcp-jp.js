@@ -27,7 +27,7 @@ function base64ToByteArray(base64) {
 
 function getAudio(text, voice, rate, volume, pitch) {
     // 定数定義
-    const MAX_BYTES_PER_CHUNK = 800  // テキスト分割の閾値（バイト）
+    const MAX_BYTES_PER_CHUNK = 300  // Google APIの文単位制限を考慮して小さく設定
     
     // デバッグログを格納する変数
     let debugLog = ""
@@ -47,11 +47,11 @@ function getAudio(text, voice, rate, volume, pitch) {
     }
     
     // 特定の文字列が含まれていたら強制的にデバッグモードON
-    if (text.indexOf("彼の企業が繁栄") !== -1) {
-        debugMode = true
-        debugLog += "=== GCP-JP DEBUG INFO ===\n"
-        debugLog += "デバッグモード: 自動ON (特定文字列検出)\n"
-    }
+    // if (text.indexOf("彼の企業が繁栄") !== -1) {
+    //     debugMode = true
+    //     debugLog += "=== GCP-JP DEBUG INFO ===\n"
+    //     debugLog += "デバッグモード: 自動ON (特定文字列検出)\n"
+    // }
     
     let speed = rate
     let jpSpeed = 1
