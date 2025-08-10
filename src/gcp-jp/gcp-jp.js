@@ -26,10 +26,18 @@ function base64ToByteArray(base64) {
 }
 
 function getAudio(text, voice, rate, volume, pitch) {
-    // console.logテスト（動作確認用）
-    console.log("=== GCP-JP console.log test ===")
-    console.log("Text: " + text)
-    console.log("Voice: " + voice)
+    // Rhinoでのログ出力テスト
+    try {
+        // Javaのprintを試す
+        print("=== GCP-JP print test ===")
+        print("Text: " + text)
+        
+        // JavaのSystem.out.printlnを試す
+        java.lang.System.out.println("=== GCP-JP System.out test ===")
+        java.lang.System.out.println("Voice: " + voice)
+    } catch (e) {
+        // ログ出力が失敗した場合は無視
+    }
     
     // デバッグモードチェック
     if (debugMode === "true" || debugMode === true) {
