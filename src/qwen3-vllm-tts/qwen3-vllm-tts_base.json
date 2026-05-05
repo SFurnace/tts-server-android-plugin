@@ -1,0 +1,16 @@
+[
+  {
+    "version": 2,
+    "name": "qwen3-vllm-tts",
+    "pluginId": "com.qwen3.vllm.tts",
+    "author": "",
+    "defVars": {
+      "baseUrl": {
+        "label": "Base URL"
+      },
+      "apiKey": {
+        "label": "API Key"
+      }
+    }
+  }
+]

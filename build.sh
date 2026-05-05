@@ -2,7 +2,7 @@
 
 if [ $# -eq 0 ]; then
     echo "Error: No target specified. Usage: $0 <target>"
-    echo "target: gcp, gcp-jp, azure, openai"
+    echo "target: gcp, gcp-jp, azure, openai, qwen3-vllm-tts"
     echo "example: $0 gcp"
     exit 1
 fi
